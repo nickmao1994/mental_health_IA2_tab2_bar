@@ -12,7 +12,7 @@ app <- Dash$new(
   )
 
 logo <- "https://cdn-icons-png.flaticon.com/512/2017/2017231.png"
-data <- read.csv('data/processed/survey.csv')
+data <- read.csv('data/survey.csv')
 
 
 chart_tpye = c("Bar","Pie")
@@ -113,21 +113,59 @@ tab2 <- htmlDiv(
                         htmlH4("Plot type"),
                         htmlBr(),
                         #Add widget here
+                        dccRadioItems(
+                          id = 'chart-widget',
+                          options = list("Pie", "Bar"),
+                          value = "Pie",
+                          labelStyle=list('display' = 'block')
+                        ),
+                        htmlBr(),
 						
                         htmlH4("Survey questions"),
                         htmlBr(),
                         #Add widget here
+                        dccDropdown(
+                          id = 'q-widget',
+                          value = colnames(qdict[1]),
+                          options = qdict %>%
+                            colnames() %>%
+                            purrr::map(function(col) list(label = qdict[[col]], value = col)),
+                          optionHeight = 100
+                        ),
+                        htmlBr(),
 						
                         htmlH4("Gender"),
                         htmlBr(),
                         #Add widget here
+                        dccDropdown(
+                          id = 'gender-widget',
+                          value = list(genderlist),
+                          options = genderlist %>%
+                            purrr::map(function(col) list(label = col, value = col)),
+                          multi = TRUE
+                        ),
+                        htmlBr(),
 						
                         htmlH4("Age"),
                         htmlBr(),
                         #Add widget here
-						
-                        htmlH4("Company size")
+                        dccDropdown(
+                          id = 'age-widget',
+                          value = list(agelist),
+                          options = agelist %>%
+                            purrr::map(function(col) list(label = col, value = col)),
+                          multi = TRUE
+                        ),
+                        htmlBr(),
+                        htmlH4("Company size"),
 						            #Add widget here
+						            dccDropdown(
+						              id = 'size-widget',
+						              value = list(sizelist),
+						              options = sizelist %>%
+						                purrr::map(function(col) list(label = col, value = col)),
+						              multi = TRUE
+						            )
                       )
                     )
                   )
@@ -139,6 +177,9 @@ tab2 <- htmlDiv(
                 dbcToast(
                   list(
 					        #Add chart here
+                    dccGraph(id = 'interactive')
+                    
+                    
                   ),style=list('position'='center', 'width'='100%', 'height'='800px')
                 )
               ),class_name = 'chart-box', style=list('margin-right'='0px','margin-left'='-150px')
@@ -279,6 +320,13 @@ pie_chart <- function(df, col, title=NULL, colors=NULL){
   fig <- fig %>% layout(margin=list(l=0, r=0, t=0, b=0))
 }
 
+bar_chart <- function(df, col, title=NULL, colors=NULL){
+  p <- ggplot(df, aes(x = !!sym(col))) +
+    geom_histogram(stat = "count")
+  ggplotly(p)
+}
+
+
 
 app$callback(
   output("display-question", 'children'),
@@ -304,7 +352,10 @@ app$callback(
       colors = c('skyblue','navy','lightgray')
       fig<-pie_chart(df2, question, title=NULL, colors)
       fig
-      
+    } else if (chart_type == "Bar") {
+      # colors = c('skyblue','navy','lightgray')
+      fig <- bar_chart(df2, question, title=NULL, colors)
+      fig
     }
   }
 
